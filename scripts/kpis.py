@@ -4,9 +4,6 @@ import streamlit as st
 from datetime import datetime, timedelta
 from fetch_data.fetch_sales import fetch_sales_data, process_sales_data
 from fetch_data.fetch_subscriptions import fetch_subscriptions_data
-import pygame
-
-pygame.mixer.init()
 
 # Definición de colores y rutas de archivos
 KLETA_COLORS = {
@@ -209,24 +206,17 @@ def color_for_goal(percentage):
     else:
         return 'red'
 
-
 def play_sound_if_new_sub(today_count):
     if 'last_today_count' not in st.session_state:
         st.session_state['last_today_count'] = today_count
     else:
         if today_count > st.session_state['last_today_count']:
             st.session_state['last_today_count'] = today_count
-
-            # Reproducir el sonido localmente usando pygame
-            try:
-                if os.path.exists(SOUND_PATH):
-                    st.write(f"Archivo de sonido encontrado: {SOUND_PATH}")
-                    pygame.mixer.music.load(SOUND_PATH)
-                    pygame.mixer.music.play()
-                else:
-                    st.error("Archivo de sonido no encontrado.")
-            except Exception as e:
-                st.error(f"Error al reproducir el sonido: {e}")
+            
+            audio_file = open(SOUND_PATH, 'rb')  # Abrir el archivo de audio
+            audio_bytes = audio_file.read()  # Leer el archivo de audio como bytes
+            
+            st.audio(audio_bytes, format='audio/mp3')  # Asegúrate de que el formato sea correcto
 
 def show_scorecards(subscriptions_count, sales_data, goals):
     today_count = sum(subscriptions_count['today'].values())
