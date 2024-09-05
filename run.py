@@ -2,18 +2,27 @@ import os
 import streamlit as st
 from git import Repo
 from scripts.kpis import main
+from dotenv import load_dotenv
 import pandas as pd
 from datetime import datetime
 import time
 
-# Cargar las credenciales de GitHub desde los secretos de Streamlit
-GITHUB_USERNAME = st.secrets["GITHUB_USERNAME"]
-GITHUB_TOKEN = st.secrets["GITHUB_TOKEN"]
-BRANCH_NAME = "main"  # Trabajamos solo con la rama main
+# Cargar las variables de entorno desde un archivo .env si estamos localmente
+load_dotenv()
 
-# Ya no usamos load_dotenv(), en su lugar usamos los secretos de Streamlit
-VALID_EMAIL = st.secrets["VALID_EMAIL"]
-VALID_PASSWORD = st.secrets["VALID_PASSWORD"]
+# Configurar las credenciales dependiendo si estamos en local o en Streamlit Cloud
+if "GITHUB_TOKEN" in os.environ:
+    GITHUB_USERNAME = os.getenv("GITHUB_USERNAME")
+    GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+    VALID_EMAIL = os.getenv("VALID_EMAIL")
+    VALID_PASSWORD = os.getenv("VALID_PASSWORD")
+else:
+    GITHUB_USERNAME = st.secrets["GITHUB_USERNAME"]
+    GITHUB_TOKEN = st.secrets["GITHUB_TOKEN"]
+    VALID_EMAIL = st.secrets["VALID_EMAIL"]
+    VALID_PASSWORD = st.secrets["VALID_PASSWORD"]
+
+BRANCH_NAME = "main"  # Trabajamos solo con la rama main
 
 def check_goals_exist():
     GOALS_CSV = 'data/monthly_goals.csv'
@@ -46,7 +55,7 @@ def commit_and_push():
         origin = repo.remote(name='origin')
 
         # Configurar la URL remota con el token de GitHub para autenticación
-        repo.git.remote('set-url', 'origin', f'https://{GITHUB_USERNAME}:{GITHUB_TOKEN}@github.com/{GITHUB_USERNAME}/new-subs.git')
+        repo.git.remote('set-url', 'origin', f'https://{GITHUB_USERNAME}:{GITHUB_TOKEN}@github.com/{GITHUB_USERNAME}/your-repo.git')
 
         # Hacer pull de la última versión del repositorio
         origin.pull(BRANCH_NAME)

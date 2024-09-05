@@ -1,10 +1,12 @@
 import os
 import pandas as pd
 import streamlit as st
-import streamlit.components.v1 as components
 from datetime import datetime, timedelta
 from fetch_data.fetch_sales import fetch_sales_data, process_sales_data
 from fetch_data.fetch_subscriptions import fetch_subscriptions_data
+import pygame
+
+pygame.mixer.init()
 
 # Definición de colores y rutas de archivos
 KLETA_COLORS = {
@@ -198,7 +200,7 @@ def count_subscriptions_by_type():
                 'long_tail': 0
             }
         }
-    
+
 def color_for_goal(percentage):
     if percentage >= 0.9:
         return 'green'
@@ -207,20 +209,24 @@ def color_for_goal(percentage):
     else:
         return 'red'
 
+
 def play_sound_if_new_sub(today_count):
     if 'last_today_count' not in st.session_state:
         st.session_state['last_today_count'] = today_count
     else:
         if today_count > st.session_state['last_today_count']:
             st.session_state['last_today_count'] = today_count
-            
-            # Use JavaScript to play sound in the browser
-            components.html(f"""
-                <script>
-                    var audio = new Audio('{SOUND_PATH}');
-                    audio.play();
-                </script>
-            """, height=0)
+
+            # Reproducir el sonido localmente usando pygame
+            try:
+                if os.path.exists(SOUND_PATH):
+                    st.write(f"Archivo de sonido encontrado: {SOUND_PATH}")
+                    pygame.mixer.music.load(SOUND_PATH)
+                    pygame.mixer.music.play()
+                else:
+                    st.error("Archivo de sonido no encontrado.")
+            except Exception as e:
+                st.error(f"Error al reproducir el sonido: {e}")
 
 def show_scorecards(subscriptions_count, sales_data, goals):
     today_count = sum(subscriptions_count['today'].values())

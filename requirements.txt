@@ -2,4 +2,3 @@ streamlit
 python-dotenv
 requests
 pandas
-pygame
