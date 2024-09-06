@@ -65,7 +65,7 @@ def prompt_for_goals(current_month):
 
         col4, col5 = st.columns(2)
         with col4:
-            goal_ventas = st.number_input("Objetivo para ventas", min_value=0, key="goal_ventas")
+            goal_pedidos = st.number_input("Objetivo para Ventas", min_value=0, key="goal_pedidos")
         with col5:
             goal_ingresos = st.number_input("Objetivo para Ingresos", min_value=0, key="goal_ingresos")
 
@@ -75,7 +75,7 @@ def prompt_for_goals(current_month):
                 'goal_electrica': [goal_electrica],
                 'goal_mecanica': [goal_mecanica],
                 'goal_long_tail': [goal_long_tail],
-                'goal_ventas': [goal_ventas],
+                'goal_pedidos': [goal_pedidos],
                 'goal_ingresos': [goal_ingresos]
             }
             df = pd.DataFrame(goals_data)
@@ -92,7 +92,7 @@ def get_goals():
                 'goal_electrica': int(df['goal_electrica'].iloc[0]),
                 'goal_mecanica': int(df['goal_mecanica'].iloc[0]),
                 'goal_long_tail': int(df['goal_long_tail'].iloc[0]),
-                'goal_ventas': int(df['goal_ventas'].iloc[0]),
+                'goal_pedidos': int(df['goal_pedidos'].iloc[0]),
                 'goal_ingresos': df['goal_ingresos'].iloc[0]
             }
     return None
@@ -236,7 +236,7 @@ def verificar_y_reproducir_sonido(subs_count_actual):
 def show_scorecards(subscriptions_count, sales_data, goals):
     today_count = sum(subscriptions_count['today'].values())
 
-    st.markdown("<h1 style='text-align: center; color:{};'>Suscripciones y ventas (Hoy)</h1>".format(KLETA_COLORS['primary_2']), unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; color:{};'>Suscripciones y Ventas (Hoy)</h1>".format(KLETA_COLORS['primary_2']), unsafe_allow_html=True)
 
     col1, col2, col3, col_divider, col4, col5 = st.columns([1, 1, 1, 0.05, 1, 1])
 
@@ -267,8 +267,8 @@ def show_scorecards(subscriptions_count, sales_data, goals):
 
     col4.markdown(f"""
         <div style="text-align: center; padding: 20px; border: 2px solid {KLETA_COLORS['primary_2']}; border-radius: 10px; background-color: {KLETA_COLORS['secondary_3']};">
-            <h2 style="text-align:center; margin-bottom: 5px; color: {KLETA_COLORS['secondary_4']}; font-size: 60px">ventas</h2>
-            <p style="font-size: 55px;">{sales_data['ventas_hoy']}</p>
+            <h2 style="text-align:center; margin-bottom: 5px; color: {KLETA_COLORS['secondary_4']}; font-size: 60px">Ventas</h2>
+            <p style="font-size: 55px;">{sales_data['pedidos_hoy']}</p>
         </div>
     """, unsafe_allow_html=True)
 
@@ -290,7 +290,7 @@ def show_scorecards(subscriptions_count, sales_data, goals):
         weekly_goal_electrica = goals['goal_electrica'] / weeks_in_month
         weekly_goal_mecanica = goals['goal_mecanica'] / weeks_in_month
         weekly_goal_long_tail = goals['goal_long_tail'] / weeks_in_month
-        weekly_goal_ventas = goals['goal_ventas'] / weeks_in_month
+        weekly_goal_pedidos = goals['goal_pedidos'] / weeks_in_month
         weekly_goal_ingresos = goals['goal_ingresos'] / weeks_in_month
 
         e_kleta_percentage = subscriptions_count['week']['e_kleta'] / weekly_goal_electrica
@@ -325,17 +325,17 @@ def show_scorecards(subscriptions_count, sales_data, goals):
             </div>
         """, unsafe_allow_html=True)
 
-        ventas_percentage = sales_data['ventas_mes'] / weekly_goal_ventas
+        pedidos_percentage = sales_data['pedidos_mes'] / weekly_goal_pedidos
         ingresos_percentage = sales_data['ingresos_mes'] / weekly_goal_ingresos
 
-        ventas_color = color_for_goal(ventas_percentage)
+        pedidos_color = color_for_goal(pedidos_percentage)
         ingresos_color = color_for_goal(ingresos_percentage)
 
         col4.markdown(f"""
             <div style="text-align: center; padding: 20px; border: 2px solid {KLETA_COLORS['primary_2']}; border-radius: 10px; background-color: {KLETA_COLORS['secondary_3']};">
-                <h2 style="text-align:center; margin-bottom: 5px; color: {KLETA_COLORS['secondary_4']}; font-size: 60px">ventas</h2>
-                <p style="font-size: 55px;">{sales_data['ventas_mes']}</p>
-                <p style="color: {ventas_color}; font-size: 40px;">Objetivo: {int(weekly_goal_ventas)}</p>
+                <h2 style="text-align:center; margin-bottom: 5px; color: {KLETA_COLORS['secondary_4']}; font-size: 60px">Ventas</h2>
+                <p style="font-size: 55px;">{sales_data['pedidos_mes']}</p>
+                <p style="color: {pedidos_color}; font-size: 40px;">Objetivo: {int(weekly_goal_pedidos)}</p>
             </div>
         """, unsafe_allow_html=True)
 

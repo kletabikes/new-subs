@@ -78,6 +78,8 @@ def run_main_loop():
 
         verificar_y_reproducir_sonido(subs_count_actual)
 
+        st.write(f"Número actual de suscripciones: {subs_count_actual}")
+
         if st.button("Guardar Datos"):
             commit_and_push()
 
