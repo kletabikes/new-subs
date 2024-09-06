@@ -53,7 +53,7 @@ def commit_and_push():
 
         origin = repo.remote(name='origin')
 
-        repo.git.remote('set-url', 'origin', f'https://{GITHUB_USERNAME}:{GITHUB_TOKEN}@github.com/{GITHUB_USERNAME}/your-repo.git')
+        repo.git.remote('set-url', 'origin', f'https://{GITHUB_USERNAME}:{GITHUB_TOKEN}@github.com/{GITHUB_USERNAME}/new-subs.git')
 
         origin.pull(BRANCH_NAME)
 
@@ -92,14 +92,11 @@ def run_main_loop():
         main()
 
 if __name__ == "__main__":
-    # Configuración inicial de la página
     st.set_page_config(layout="wide", initial_sidebar_state="expanded")
 
-    # Manejar el estado de inicio de sesión
     if 'logged_in' not in st.session_state:
         st.session_state['logged_in'] = False
 
-    # Mostrar la interfaz de inicio de sesión si no está autenticado
     if not st.session_state['logged_in']:
         login()
     else:
