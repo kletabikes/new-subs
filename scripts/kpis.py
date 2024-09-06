@@ -4,6 +4,8 @@ import streamlit as st
 from datetime import datetime, timedelta
 from fetch_data.fetch_sales import fetch_sales_data, process_sales_data
 from fetch_data.fetch_subscriptions import fetch_subscriptions_data
+import base64
+
 
 # Definición de colores y rutas de archivos
 KLETA_COLORS = {
@@ -206,17 +208,30 @@ def color_for_goal(percentage):
     else:
         return 'red'
 
-def play_sound_if_new_sub(today_count):
-    if 'last_today_count' not in st.session_state:
-        st.session_state['last_today_count'] = today_count
+def reproducir_sonido():
+    file_path = "assets/new_subscription.mp3"
+    with open(file_path, "rb") as f:
+        data = f.read()
+        b64 = base64.b64encode(data).decode()
+        
+        # Código HTML para reproducir el sonido
+        audio_html = f"""
+            <audio autoplay>
+            <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
+            Tu navegador no soporta el elemento de audio.
+            </audio>
+        """
+        st.markdown(audio_html, unsafe_allow_html=True)
+
+# Función para verificar y reproducir el sonido si hay un aumento
+def verificar_y_reproducir_sonido(subs_count_actual):
+    if 'last_subs_count' not in st.session_state:
+        st.session_state['last_subs_count'] = subs_count_actual
     else:
-        if today_count > st.session_state['last_today_count']:
-            st.session_state['last_today_count'] = today_count
-            
-            audio_file = open(SOUND_PATH, 'rb')  # Abrir el archivo de audio
-            audio_bytes = audio_file.read()  # Leer el archivo de audio como bytes
-            
-            st.audio(audio_bytes, format='audio/mp3')  # Asegúrate de que el formato sea correcto
+        last_count = st.session_state['last_subs_count']
+        if subs_count_actual > last_count:
+            reproducir_sonido()  # Reproduce sonido si hay aumento
+        st.session_state['last_subs_count'] = subs_count_actual
 
 def show_scorecards(subscriptions_count, sales_data, goals):
     today_count = sum(subscriptions_count['today'].values())
@@ -333,7 +348,7 @@ def show_scorecards(subscriptions_count, sales_data, goals):
         """, unsafe_allow_html=True)
     
     # Verificar y reproducir sonido si hay un aumento en las suscripciones
-    play_sound_if_new_sub(today_count)
+    verificar_y_reproducir_sonido(today_count)
 
 def main():
     init_files()

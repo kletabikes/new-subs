@@ -1,11 +1,11 @@
 import os
 import streamlit as st
+import time
+from datetime import datetime
 from git import Repo
-from scripts.kpis import main
+from scripts.kpis import main, count_subscriptions_by_type, verificar_y_reproducir_sonido
 from dotenv import load_dotenv
 import pandas as pd
-from datetime import datetime
-import time
 
 # Cargar las variables de entorno desde un archivo .env si estamos localmente
 load_dotenv()
@@ -51,24 +51,19 @@ def commit_and_push():
     try:
         repo = Repo(os.getcwd())
 
-        # Asegurarse de que tenemos la última versión de main
         origin = repo.remote(name='origin')
 
-        # Configurar la URL remota con el token de GitHub para autenticación
         repo.git.remote('set-url', 'origin', f'https://{GITHUB_USERNAME}:{GITHUB_TOKEN}@github.com/{GITHUB_USERNAME}/your-repo.git')
 
-        # Hacer pull de la última versión del repositorio
         origin.pull(BRANCH_NAME)
 
-        # Añadir cambios y hacer commit
-        repo.git.add('data/*')  # Añadir solo archivos relevantes
+        repo.git.add('data/*')  
         repo.index.commit("Auto commit for data updates")
 
-        # Hacer push usando el token
         origin.push(refspec=f"{BRANCH_NAME}:{BRANCH_NAME}")
 
         st.success("Datos guardados y push realizado correctamente.")
-        st.rerun()  # Refrescar la página después del push
+        st.rerun()  
 
     except Exception as e:
         st.error(f"Error al hacer commit/push en GitHub: {e}")
@@ -77,11 +72,16 @@ def run_main_loop():
     if check_goals_exist():
         main()
 
+        subscriptions_count = count_subscriptions_by_type()
+
+        subs_count_actual = sum(subscriptions_count['today'].values())
+
+        verificar_y_reproducir_sonido(subs_count_actual)
+
         if st.button("Guardar Datos"):
             commit_and_push()
 
-        refresh_time = 180  # Refrescar cada 180 segundos
-
+        refresh_time = 180
         time.sleep(refresh_time)
 
         st.rerun()
@@ -90,11 +90,14 @@ def run_main_loop():
         main()
 
 if __name__ == "__main__":
+    # Configuración inicial de la página
     st.set_page_config(layout="wide", initial_sidebar_state="expanded")
 
+    # Manejar el estado de inicio de sesión
     if 'logged_in' not in st.session_state:
         st.session_state['logged_in'] = False
 
+    # Mostrar la interfaz de inicio de sesión si no está autenticado
     if not st.session_state['logged_in']:
         login()
     else:
