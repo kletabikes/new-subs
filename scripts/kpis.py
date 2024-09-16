@@ -119,14 +119,11 @@ def store_new_subscriptions(new_subs):
 def count_subscriptions_by_type():
     today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
     
-    # Si hoy es sábado (weekday() == 5), es el primer día de la semana
-    # Calcular el primer día de la semana como el sábado anterior
-    if today.weekday() >= 5:  # Sábado y domingo
-        first_day_of_week = today - timedelta(days=today.weekday() - 5)
-    else:  # De lunes a viernes
-        first_day_of_week = today - timedelta(days=today.weekday() + 2)  # Obtener el sábado anterior
+    # Si hoy es lunes (weekday() == 0), es el primer día de la semana
+    # Calcular el primer día de la semana como el lunes anterior
+    first_day_of_week = today - timedelta(days=today.weekday())  # Obtiene el lunes de la semana actual
 
-    # El último día de la semana sería el siguiente viernes (inclusive)
+    # El último día de la semana sería el siguiente domingo (inclusive)
     last_day_of_week = first_day_of_week + timedelta(days=6)
 
     if os.path.exists(SUBSCRIPTIONS_CSV):
@@ -140,20 +137,12 @@ def count_subscriptions_by_type():
                 'today': {'e_kleta': 0, 'm_kleta': 0, 'long_tail': 0}
             }
 
-        # Asegurarnos de que el sábado y domingo estén en el mismo mes que el lunes
-        first_monday_of_week = first_day_of_week + timedelta(days=2)  # El lunes de la semana actual
-
-        # Filtrar suscripciones desde el sábado (primero de la semana) hasta el viernes (último día de la semana)
+        # Filtrar suscripciones desde el lunes (primero de la semana) hasta el domingo (último día de la semana)
         subs_this_week = subs_df[
             (subs_df['fecha_de_pago'] >= first_day_of_week) &
             (subs_df['fecha_de_pago'] <= last_day_of_week) &
             (subs_df['descontar_nuevos'] == 'No') &
             (subs_df['page'] == 'suscripcion')
-        ]
-
-        # Verificar si el sábado o domingo pertenecen al mes anterior, y excluirlos si es necesario
-        subs_this_week = subs_this_week[
-            (subs_this_week['fecha_de_pago'].dt.month == first_monday_of_week.month)
         ]
 
         # Filtrar suscripciones de hoy
