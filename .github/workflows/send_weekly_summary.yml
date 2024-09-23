@@ -29,4 +29,4 @@ jobs:
         RECEIVER_EMAIL: ${{ secrets.RECEIVER_EMAIL }}
         EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
       run: |
-        python send_weekly_summary.py
+        python scripts/send_weekly_summary.py
