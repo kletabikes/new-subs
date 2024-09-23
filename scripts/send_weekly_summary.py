@@ -1,11 +1,14 @@
-import os
 import pandas as pd
 from datetime import datetime, timedelta
-from fetch_data.fetch_sales import fetch_sales_data, process_sales_data_last_week
-from fetch_data.fetch_subscriptions import fetch_subscriptions_data
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+
+import os, sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from fetch_data.fetch_sales import fetch_sales_data, process_sales_data_last_week
+from fetch_data.fetch_subscriptions import fetch_subscriptions_data
+
 
 def get_goals():
     GOALS_CSV = 'data/monthly_goals.csv'
@@ -22,7 +25,6 @@ def get_goals():
     return None
 
 def count_subscriptions_by_type_last_week(subs_df):
-    # Implementación de get_last_week_start_end()
     def get_last_week_start_end():
         today = datetime.now()
         current_week_start = today - timedelta(days=today.weekday())
@@ -71,7 +73,6 @@ def send_last_week_summary(subscriptions_count_last_week, sales_data_last_week, 
     message["From"] = sender_email
     message["To"] = receiver_email
 
-    # Contenido HTML del correo electrónico con tablas
     html = f"""
     <html>
     <body>
@@ -123,11 +124,9 @@ def send_last_week_summary(subscriptions_count_last_week, sales_data_last_week, 
     </html>
     """
 
-    # Convertir el contenido HTML a un objeto MIMEText
     part = MIMEText(html, "html")
     message.attach(part)
 
-    # Enviar el correo electrónico
     try:
         # Si estás utilizando Gmail, debes configurar una contraseña de aplicación
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
