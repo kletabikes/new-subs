@@ -3,5 +3,3 @@ python-dotenv
 requests
 pandas
 pygame
-smtplib
-email
