@@ -2,10 +2,9 @@ import os
 import pandas as pd
 import streamlit as st
 from datetime import datetime, timedelta
-from fetch_data.fetch_sales import fetch_sales_data, process_sales_data
+from fetch_data.fetch_sales import fetch_sales_data, process_sales_data, process_sales_data_last_week
 from fetch_data.fetch_subscriptions import fetch_subscriptions_data
 import base64
-
 
 # Definición de colores y rutas de archivos
 KLETA_COLORS = {
@@ -82,7 +81,7 @@ def prompt_for_goals(current_month):
             df.to_csv(GOALS_CSV, index=False)
             st.session_state['goals_entered'] = True
             st.success("Objetivos guardados correctamente.")
-            st.rerun()
+            st.experimental_rerun()
 
 def get_goals():
     if os.path.exists(GOALS_CSV):
@@ -116,78 +115,66 @@ def store_new_subscriptions(new_subs):
     if not valid_subs_df.empty:
         valid_subs_df.to_csv(SUBSCRIPTIONS_CSV, mode='a', header=False, index=False)
 
-def count_subscriptions_by_type():
-    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-    
-    # Si hoy es lunes (weekday() == 0), es el primer día de la semana
-    # Calcular el primer día de la semana como el lunes anterior
-    first_day_of_week = today - timedelta(days=today.weekday())  # Obtiene el lunes de la semana actual
+def get_week_start_end(date):
+    # Inicio de la semana (lunes a las 00:00:00)
+    week_start = date - timedelta(days=date.weekday())
+    week_start = week_start.replace(hour=0, minute=0, second=0, microsecond=0)
+    # Fin de la semana (domingo a las 23:59:59)
+    week_end = week_start + timedelta(days=6)
+    week_end = week_end.replace(hour=23, minute=59, second=59, microsecond=999999)
+    return week_start, week_end
 
-    # El último día de la semana sería el siguiente domingo (inclusive)
-    last_day_of_week = first_day_of_week + timedelta(days=6)
+def count_subscriptions_by_type(subs_df):
+    today = datetime.now()
+    first_day_of_week, last_day_of_week = get_week_start_end(today)
 
-    if os.path.exists(SUBSCRIPTIONS_CSV):
-        subs_df = pd.read_csv(SUBSCRIPTIONS_CSV, on_bad_lines='skip')
-        subs_df['fecha_de_pago'] = pd.to_datetime(subs_df['fecha_de_pago'], errors='coerce')
+    subs_df['fecha_de_pago'] = pd.to_datetime(subs_df['fecha_de_pago'], errors='coerce')
 
-        if subs_df['fecha_de_pago'].isnull().sum() > 0:
-            st.error("Existen fechas inválidas en el archivo de suscripciones.")
-            return {
-                'week': {'e_kleta': 0, 'm_kleta': 0, 'long_tail': 0},
-                'today': {'e_kleta': 0, 'm_kleta': 0, 'long_tail': 0}
-            }
-
-        # Filtrar suscripciones desde el lunes (primero de la semana) hasta el domingo (último día de la semana)
-        subs_this_week = subs_df[
-            (subs_df['fecha_de_pago'] >= first_day_of_week) &
-            (subs_df['fecha_de_pago'] <= last_day_of_week) &
-            (subs_df['descontar_nuevos'] == 'No') &
-            (subs_df['page'] == 'suscripcion')
-        ]
-
-        # Filtrar suscripciones de hoy
-        subs_today = subs_df[
-            (subs_df['fecha_de_pago'] >= today) & 
-            (subs_df['fecha_de_pago'] < today + timedelta(days=1)) &
-            (subs_df['descontar_nuevos'] == 'No') & 
-            (subs_df['page'] == 'suscripcion')
-        ]
-
-        # Contar suscripciones por tipo
-        e_kleta_week = subs_this_week[subs_this_week['tipo'] == 'ELECTRICA'].shape[0]
-        m_kleta_week = subs_this_week[subs_this_week['tipo'] == 'MECANICA'].shape[0]
-        long_tail_week = subs_this_week[subs_this_week['tipo'] == 'LONG TAIL'].shape[0]
-
-        e_kleta_today = subs_today[subs_today['tipo'] == 'ELECTRICA'].shape[0]
-        m_kleta_today = subs_today[subs_today['tipo'] == 'MECANICA'].shape[0]
-        long_tail_today = subs_today[subs_today['tipo'] == 'LONG TAIL'].shape[0]
-
+    if subs_df['fecha_de_pago'].isnull().sum() > 0:
+        st.error("Existen fechas inválidas en los datos de suscripciones.")
         return {
-            'week': {
-                'e_kleta': e_kleta_week,
-                'm_kleta': m_kleta_week,
-                'long_tail': long_tail_week
-            },
-            'today': {
-                'e_kleta': e_kleta_today,
-                'm_kleta': m_kleta_today,
-                'long_tail': long_tail_today
-            }
+            'week': {'e_kleta': 0, 'm_kleta': 0, 'long_tail': 0},
+            'today': {'e_kleta': 0, 'm_kleta': 0, 'long_tail': 0}
         }
-    else:
-        st.warning("No se encontraron suscripciones en el CSV.")
-        return {
-            'week': {
-                'e_kleta': 0,
-                'm_kleta': 0,
-                'long_tail': 0
-            },
-            'today': {
-                'e_kleta': 0,
-                'm_kleta': 0,
-                'long_tail': 0
-            }
+
+    subs_this_week = subs_df[
+        (subs_df['fecha_de_pago'] >= first_day_of_week) &
+        (subs_df['fecha_de_pago'] <= last_day_of_week) &
+        (subs_df['descontar_nuevos'] == 'No') &
+        (subs_df['page'] == 'suscripcion')
+    ]
+
+    # Cálculos de suscripciones de hoy
+    today_start = today.replace(hour=0, minute=0, second=0, microsecond=0)
+    today_end = today.replace(hour=23, minute=59, second=59, microsecond=999999)
+
+    subs_today = subs_df[
+        (subs_df['fecha_de_pago'] >= today_start) &
+        (subs_df['fecha_de_pago'] <= today_end) &
+        (subs_df['descontar_nuevos'] == 'No') &
+        (subs_df['page'] == 'suscripcion')
+    ]
+
+    e_kleta_week = subs_this_week[subs_this_week['tipo'] == 'ELECTRICA'].shape[0]
+    m_kleta_week = subs_this_week[subs_this_week['tipo'] == 'MECANICA'].shape[0]
+    long_tail_week = subs_this_week[subs_this_week['tipo'] == 'LONG TAIL'].shape[0]
+
+    e_kleta_today = subs_today[subs_today['tipo'] == 'ELECTRICA'].shape[0]
+    m_kleta_today = subs_today[subs_today['tipo'] == 'MECANICA'].shape[0]
+    long_tail_today = subs_today[subs_today['tipo'] == 'LONG TAIL'].shape[0]
+
+    return {
+        'week': {
+            'e_kleta': e_kleta_week,
+            'm_kleta': m_kleta_week,
+            'long_tail': long_tail_week
+        },
+        'today': {
+            'e_kleta': e_kleta_today,
+            'm_kleta': m_kleta_today,
+            'long_tail': long_tail_today
         }
+    }
 
 def color_for_goal(percentage):
     if percentage >= 0.9:
@@ -202,8 +189,7 @@ def reproducir_sonido():
     with open(file_path, "rb") as f:
         data = f.read()
         b64 = base64.b64encode(data).decode()
-        
-        # Código HTML para reproducir el sonido
+
         audio_html = f"""
             <audio autoplay>
             <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
@@ -212,14 +198,13 @@ def reproducir_sonido():
         """
         st.markdown(audio_html, unsafe_allow_html=True)
 
-# Función para verificar y reproducir el sonido si hay un aumento
 def verificar_y_reproducir_sonido(subs_count_actual):
     if 'last_subs_count' not in st.session_state:
         st.session_state['last_subs_count'] = subs_count_actual
     else:
         last_count = st.session_state['last_subs_count']
         if subs_count_actual > last_count:
-            reproducir_sonido()  # Reproduce sonido si hay aumento
+            reproducir_sonido()
         st.session_state['last_subs_count'] = subs_count_actual
 
 def show_scorecards(subscriptions_count, sales_data, goals):
@@ -275,16 +260,16 @@ def show_scorecards(subscriptions_count, sales_data, goals):
     col1, col2, col3, col_divider, col4, col5 = st.columns([1, 1, 1, 0.05, 1, 1])
 
     if goals:
-        weeks_in_month = 4  # Asumimos que cada mes tiene 4 semanas
+        weeks_in_month = 4
         weekly_goal_electrica = goals['goal_electrica'] / weeks_in_month
         weekly_goal_mecanica = goals['goal_mecanica'] / weeks_in_month
         weekly_goal_long_tail = goals['goal_long_tail'] / weeks_in_month
         weekly_goal_pedidos = goals['goal_pedidos'] / weeks_in_month
         weekly_goal_ingresos = goals['goal_ingresos'] / weeks_in_month
 
-        e_kleta_percentage = subscriptions_count['week']['e_kleta'] / weekly_goal_electrica
-        m_kleta_percentage = subscriptions_count['week']['m_kleta'] / weekly_goal_mecanica
-        long_tail_percentage = subscriptions_count['week']['long_tail'] / weekly_goal_long_tail
+        e_kleta_percentage = subscriptions_count['week']['e_kleta'] / weekly_goal_electrica if weekly_goal_electrica else 0
+        m_kleta_percentage = subscriptions_count['week']['m_kleta'] / weekly_goal_mecanica if weekly_goal_mecanica else 0
+        long_tail_percentage = subscriptions_count['week']['long_tail'] / weekly_goal_long_tail if weekly_goal_long_tail else 0
 
         e_kleta_color = color_for_goal(e_kleta_percentage)
         m_kleta_color = color_for_goal(m_kleta_percentage)
@@ -314,8 +299,8 @@ def show_scorecards(subscriptions_count, sales_data, goals):
             </div>
         """, unsafe_allow_html=True)
 
-        pedidos_percentage = sales_data['pedidos_mes'] / weekly_goal_pedidos
-        ingresos_percentage = sales_data['ingresos_mes'] / weekly_goal_ingresos
+        pedidos_percentage = sales_data['pedidos_semana'] / weekly_goal_pedidos if weekly_goal_pedidos else 0
+        ingresos_percentage = sales_data['ingresos_semana'] / weekly_goal_ingresos if weekly_goal_ingresos else 0
 
         pedidos_color = color_for_goal(pedidos_percentage)
         ingresos_color = color_for_goal(ingresos_percentage)
@@ -323,7 +308,7 @@ def show_scorecards(subscriptions_count, sales_data, goals):
         col4.markdown(f"""
             <div style="text-align: center; padding: 20px; border: 2px solid {KLETA_COLORS['primary_2']}; border-radius: 10px; background-color: {KLETA_COLORS['secondary_3']};">
                 <h2 style="text-align:center; margin-bottom: 5px; color: {KLETA_COLORS['secondary_4']}; font-size: 60px">Ventas</h2>
-                <p style="font-size: 55px;">{sales_data['pedidos_mes']}</p>
+                <p style="font-size: 55px;">{sales_data['pedidos_semana']}</p>
                 <p style="color: {pedidos_color}; font-size: 40px;">Objetivo: {int(weekly_goal_pedidos)}</p>
             </div>
         """, unsafe_allow_html=True)
@@ -331,11 +316,11 @@ def show_scorecards(subscriptions_count, sales_data, goals):
         col5.markdown(f"""
             <div style="text-align: center; padding: 20px; border: 2px solid {KLETA_COLORS['primary_2']}; border-radius: 10px; background-color: {KLETA_COLORS['secondary_3']};">
                 <h2 style="text-align:center; margin-bottom: 5px; color: {KLETA_COLORS['secondary_4']}; font-size: 60px">Ingresos</h2>
-                <p style="font-size: 55px;">€{sales_data['ingresos_mes']}</p>
+                <p style="font-size: 55px;">€{sales_data['ingresos_semana']}</p>
                 <p style="color: {ingresos_color}; font-size: 40px;">Objetivo: €{weekly_goal_ingresos:.2f}</p>
             </div>
         """, unsafe_allow_html=True)
-    
+
     verificar_y_reproducir_sonido(today_count)
 
 def main():
@@ -349,7 +334,6 @@ def main():
     if not df_subscriptions.empty:
         df_subscriptions['fecha_de_pago'] = pd.to_datetime(df_subscriptions['fecha_de_pago'], errors='coerce')
 
-        # Procesar solo suscripciones que llegaron después de la última fecha procesada
         if last_processed_date is not None:
             new_subs = df_subscriptions[df_subscriptions['fecha_de_pago'] > last_processed_date]
         else:
@@ -365,7 +349,7 @@ def main():
 
     goals = get_goals()
     if goals:
-        subscriptions_count = count_subscriptions_by_type()
+        subscriptions_count = count_subscriptions_by_type(df_subscriptions)
         sales_data = process_sales_data(df_sales)
 
         show_scorecards(subscriptions_count, sales_data, goals)

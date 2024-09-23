@@ -2,6 +2,7 @@ import urllib.parse
 import requests
 import pandas as pd
 import os, sys
+from datetime import timedelta  # Importar timedelta para ajustar la hora
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from assets import config
 
@@ -22,6 +23,10 @@ def fetch_subscriptions_data():
         if records:
             df = pd.json_normalize(records)
             
+            # Convertir 'fecha_de_pago' a datetime y agregar una hora
+            df['fecha_de_pago'] = pd.to_datetime(df['fecha_de_pago'], errors='coerce') + timedelta(hours=2)
+            
+            # Filtrar los registros con status diferente de 'Not Happened'
             df_filtered = df[df['status'] != 'Not Happened']
             return df_filtered
         else:

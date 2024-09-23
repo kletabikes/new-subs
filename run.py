@@ -72,7 +72,21 @@ def run_main_loop():
     if check_goals_exist():
         main()
 
-        subscriptions_count = count_subscriptions_by_type()
+        # Importar fetch_subscriptions_data
+        from fetch_data.fetch_subscriptions import fetch_subscriptions_data
+
+        # Obtener df_subscriptions
+        df_subscriptions = fetch_subscriptions_data()
+
+        # Verificar que df_subscriptions no esté vacío y convertir fechas
+        if not df_subscriptions.empty:
+            df_subscriptions['fecha_de_pago'] = pd.to_datetime(df_subscriptions['fecha_de_pago'], errors='coerce')
+        else:
+            st.error("No se pudieron obtener datos de suscripciones.")
+            return
+
+        # Llamar a count_subscriptions_by_type() pasando df_subscriptions
+        subscriptions_count = count_subscriptions_by_type(df_subscriptions)
 
         subs_count_actual = sum(subscriptions_count['today'].values())
 
@@ -90,7 +104,6 @@ def run_main_loop():
 
     else:
         main()
-
 if __name__ == "__main__":
     st.set_page_config(layout="wide", initial_sidebar_state="expanded")
 
