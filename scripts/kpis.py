@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import streamlit as st
 from datetime import datetime, timedelta
-from fetch_data.fetch_sales import fetch_sales_data, process_sales_data, process_sales_data_last_week
+from fetch_data.fetch_sales import fetch_sales_data, process_sales_data
 from fetch_data.fetch_subscriptions import fetch_subscriptions_data
 import base64
 

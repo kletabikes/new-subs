@@ -29,6 +29,44 @@ def fetch_sales_data():
     except requests.exceptions.RequestException as e:
         raise ConnectionError(f"Error al obtener los registros: {e}")
 
+
+# Función para procesar datos de ventas actuales
+def process_sales_data(df_sales):
+    if df_sales.empty:
+        return {
+            'pedidos_hoy': 0,
+            'ingresos_hoy': 0,
+            'pedidos_semana': 0,
+            'ingresos_semana': 0,
+        }
+
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    first_day_of_week = today - timedelta(days=today.weekday())  # Lunes de la semana actual
+
+    df_sales['Total'] = pd.to_numeric(df_sales['Total'], errors='coerce').fillna(0)
+    df_cobradas = df_sales[df_sales['Estado Ingresos'].str.lower() == 'cobrado']
+    df_bicis = df_cobradas[df_cobradas['Categoria de Item'].str.lower() == 'bicicleta']
+
+    # Ventas de hoy
+    ventas_hoy_bicis = df_bicis[(df_bicis['Fecha de Venta'] >= today) & (df_bicis['Fecha de Venta'] < today + timedelta(days=1))]
+    ventas_hoy_total = df_cobradas[(df_cobradas['Fecha de Venta'] >= today) & (df_cobradas['Fecha de Venta'] < today + timedelta(days=1))]
+
+    # Ventas de la semana
+    ventas_semana_bicis = df_bicis[(df_bicis['Fecha de Venta'] >= first_day_of_week) & (df_bicis['Fecha de Venta'] < today + timedelta(days=1))]
+    ventas_semana_total = df_cobradas[(df_cobradas['Fecha de Venta'] >= first_day_of_week) & (df_cobradas['Fecha de Venta'] < today + timedelta(days=1))]
+
+    ingresos_hoy_bicis = ventas_hoy_bicis['Total'].sum()
+    ingresos_hoy_total = ventas_hoy_total['Total'].sum()
+    ingresos_semana_bicis = ventas_semana_bicis['Total'].sum()
+    ingresos_semana_total = ventas_semana_total['Total'].sum()
+
+    return {
+        'pedidos_hoy': ventas_hoy_bicis.shape[0],
+        'ingresos_hoy': round(ingresos_hoy_total, 2),
+        'pedidos_semana': ventas_semana_bicis.shape[0],
+        'ingresos_semana': round(ingresos_semana_total, 2),
+    }
+
 # Función para procesar los datos de ventas de la semana pasada
 def process_sales_data_last_week(df_sales):
     today = (datetime.now() + timedelta(hours=2)).replace(hour=0, minute=0, second=0, microsecond=0)
@@ -110,10 +148,8 @@ def process_sales_data_last_week(df_sales):
     }
 
 if __name__ == "__main__":
-    # Obtener los datos de ventas
     df_sales = fetch_sales_data()
 
-    # Procesar las ventas de la semana pasada
     result = process_sales_data_last_week(df_sales)
 
     # Imprimir el resultado final
