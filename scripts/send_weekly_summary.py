@@ -3,15 +3,25 @@ from datetime import datetime, timedelta
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-
 import os, sys
+from dotenv import load_dotenv  # Importar dotenv
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from fetch_data.fetch_sales import fetch_sales_data, process_sales_data_last_week
 from fetch_data.fetch_subscriptions import fetch_subscriptions_data
 
+# Función para limpiar el entorno de variables antiguas
+def clear_env_vars():
+    keys_to_remove = ['SENDER_EMAIL', 'RECEIVER_EMAILS', 'EMAIL_PASSWORD']
+    for key in keys_to_remove:
+        os.environ.pop(key, None)  # Eliminar la variable de entorno si existe
+
+# Cargar las variables de entorno y forzar la recarga
+def load_env_vars():
+    clear_env_vars()  # Limpiar las variables de entorno cargadas previamente
+    load_dotenv()     # Recargar desde el archivo .env
 
 def get_goals():
-    GOALS_CSV = 'data/monthly_goals.csv'
+    GOALS_CSV = '/Users/felixperez/Documents/new-subs/data/monthly_goals.csv'
     if os.path.exists(GOALS_CSV):
         df = pd.read_csv(GOALS_CSV)
         if not df.empty:
@@ -59,19 +69,23 @@ def count_subscriptions_by_type_last_week(subs_df):
     }
 
 def send_last_week_summary(subscriptions_count_last_week, sales_data_last_week, goals):
-    sender_email = os.environ.get('SENDER_EMAIL')
-    receiver_email = os.environ.get('RECEIVER_EMAIL')
-    password = os.environ.get('EMAIL_PASSWORD')
-
-    if not sender_email or not receiver_email or not password:
+    load_env_vars()  # Asegurar que las variables de entorno se cargan correctamente
+    sender_email = os.getenv('SENDER_EMAIL')
+    receiver_emails = os.getenv('RECEIVER_EMAILS')
+    password = os.getenv('EMAIL_PASSWORD')
+    
+    if not sender_email or not receiver_emails or not password:
         print("Las credenciales de correo electrónico no están configuradas. Por favor, configúrelas en las variables de entorno.")
         return
+
+    # Convertir la lista de correos separada por comas en una lista Python
+    recipient_list = [email.strip() for email in receiver_emails.split(",")]
 
     # Crear el mensaje de correo electrónico
     message = MIMEMultipart("alternative")
     message["Subject"] = f"Resumen de la última semana de Suscripciones y Ventas - {datetime.now().strftime('%Y-%m-%d')}"
     message["From"] = sender_email
-    message["To"] = receiver_email
+    message["To"] = ", ".join(recipient_list)
 
     html = f"""
     <html>
@@ -110,11 +124,6 @@ def send_last_week_summary(subscriptions_count_last_week, sales_data_last_week, 
                 <th>Acumulado</th>
             </tr>
             <tr>
-                <td style="text-align: center;">Pedidos</td>
-                <td style="text-align: center;">{int(goals['goal_pedidos'] / 4)}</td>
-                <td style="text-align: center;">{sales_data_last_week.get('pedidos_semana_pasada', 0)}</td>
-            </tr>
-            <tr>
                 <td style="text-align: center;">Ingresos</td>
                 <td style="text-align: center;">€{goals['goal_ingresos'] / 4:.2f}</td>
                 <td style="text-align: center;">€{sales_data_last_week.get('ingresos_semana_pasada', 0)}</td>
@@ -128,14 +137,13 @@ def send_last_week_summary(subscriptions_count_last_week, sales_data_last_week, 
     message.attach(part)
 
     try:
-        # Si estás utilizando Gmail, debes configurar una contraseña de aplicación
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
             server.login(sender_email, password)
-            server.sendmail(sender_email, receiver_email, message.as_string())
-            print("Resumen de la última semana enviado con éxito")
+            # Enviar correo a todos los destinatarios de una vez
+            server.sendmail(sender_email, recipient_list, message.as_string())
+            print(f"Resumen de la última semana enviado con éxito a: {', '.join(recipient_list)}")
     except Exception as e:
         print(f"Error al enviar el correo: {e}")
-        print(e)  # Imprime el error en la consola para depuración
 
 def main():
     goals = get_goals()
