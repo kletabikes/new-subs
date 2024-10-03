@@ -83,7 +83,7 @@ def send_last_week_summary(subscriptions_count_last_week, sales_data_last_week, 
 
     # Crear el mensaje de correo electrónico
     message = MIMEMultipart("alternative")
-    message["Subject"] = f"Resumen de la última semana de Suscripciones y Ventas - {datetime.now().strftime('%Y-%m-%d')}"
+    message["Subject"] = f"Resumen de la última semana de Suscripciones y Ventas"
     message["From"] = sender_email
     message["To"] = ", ".join(recipient_list)
 

@@ -81,7 +81,7 @@ def prompt_for_goals(current_month):
             df.to_csv(GOALS_CSV, index=False)
             st.session_state['goals_entered'] = True
             st.success("Objetivos guardados correctamente.")
-            st.experimental_rerun()
+            st.rerun()
 
 def get_goals():
     if os.path.exists(GOALS_CSV):
