@@ -198,14 +198,22 @@ def reproducir_sonido():
         """
         st.markdown(audio_html, unsafe_allow_html=True)
 
-def verificar_y_reproducir_sonido(subs_count_actual):
+def verificar_y_reproducir_sonido(subs_count_actual, sales_count_actual):
     if 'last_subs_count' not in st.session_state:
         st.session_state['last_subs_count'] = subs_count_actual
     else:
-        last_count = st.session_state['last_subs_count']
-        if subs_count_actual > last_count:
+        last_subs_count = st.session_state['last_subs_count']
+        if subs_count_actual > last_subs_count:
             reproducir_sonido()
         st.session_state['last_subs_count'] = subs_count_actual
+
+    if 'last_sales_count' not in st.session_state:
+        st.session_state['last_sales_count'] = sales_count_actual
+    else:
+        last_sales_count = st.session_state['last_sales_count']
+        if sales_count_actual > last_sales_count:
+            reproducir_sonido()
+        st.session_state['last_sales_count'] = sales_count_actual
 
 def show_scorecards(subscriptions_count, sales_data, goals):
     today_count = sum(subscriptions_count['today'].values())
@@ -321,7 +329,7 @@ def show_scorecards(subscriptions_count, sales_data, goals):
             </div>
         """, unsafe_allow_html=True)
 
-    verificar_y_reproducir_sonido(today_count)
+    verificar_y_reproducir_sonido(today_count, sales_data['pedidos_hoy'])
 
 def main():
     init_files()

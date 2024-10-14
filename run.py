@@ -6,6 +6,7 @@ from git import Repo
 from scripts.kpis import main, count_subscriptions_by_type, verificar_y_reproducir_sonido
 from dotenv import load_dotenv
 import pandas as pd
+from fetch_data.fetch_sales import fetch_sales_data, process_sales_data  # Agregar importación de ventas
 
 # Cargar las variables de entorno desde un archivo .env si estamos localmente
 load_dotenv()
@@ -85,14 +86,25 @@ def run_main_loop():
             st.error("No se pudieron obtener datos de suscripciones.")
             return
 
+        # Procesar ventas
+        df_sales = fetch_sales_data()
+        if df_sales.empty:
+            st.error("No se pudieron obtener datos de ventas.")
+            return
+        sales_data = process_sales_data(df_sales)
+
         # Llamar a count_subscriptions_by_type() pasando df_subscriptions
         subscriptions_count = count_subscriptions_by_type(df_subscriptions)
 
+        # Obtener el número total de suscripciones y ventas del día
         subs_count_actual = sum(subscriptions_count['today'].values())
+        sales_count_actual = sales_data['pedidos_hoy']
 
-        verificar_y_reproducir_sonido(subs_count_actual)
+        # Verificar aumentos en suscripciones o ventas
+        verificar_y_reproducir_sonido(subs_count_actual, sales_count_actual)
 
         st.write(f"Número actual de suscripciones: {subs_count_actual}")
+        st.write(f"Número actual de ventas: {sales_count_actual}")
 
         if st.button("Guardar Datos"):
             commit_and_push()
@@ -104,6 +116,7 @@ def run_main_loop():
 
     else:
         main()
+
 if __name__ == "__main__":
     st.set_page_config(layout="wide", initial_sidebar_state="expanded")
 
