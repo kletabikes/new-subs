@@ -1,6 +1,6 @@
 # Kleta Bikes Dashboard
 
-Este proyecto es un **dashboard** interactivo desarrollado con **Streamlit** para visualizar y gestionar suscripciones y pedidos de Kleta Bikes.
+**dashboard** interactivo creado con **Streamlit** para visualizar y gestionar suscripciones y pedidos de Kleta Bikes.
 
 ## Funcionalidades principales
 
