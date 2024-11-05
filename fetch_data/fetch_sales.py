@@ -6,9 +6,8 @@ import os, sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from assets import config
 
-# Función para obtener datos de ventas de la API de Ninox
 def fetch_sales_data():
-    query_string = f"(select 'POS_ITEMS_X_PEDIDO').{{cafe = POS_PEDIDOS.Cafe, 'Fecha de Venta': text('Fecha de Venta'), Total: number('Valor Unidad' + IVA), 'Estado Ingresos': text(POS_PEDIDOS.EstadoIngresos), 'Categoria de Item': ITEMS.Categoria.Categoria}}"
+    query_string = f"(select 'POS_ITEMS_X_PEDIDO').{{'Fecha de Venta': text('Fecha de Venta'), Total: number('Valor Unidad' + IVA - DescuentoCifra), 'Estado Ingresos': text(POS_PEDIDOS.EstadoIngresos), 'Categoria de Item': ITEMS.Categoria.Categoria, cafe: Cafe_formateado}}"
     encoded_query = urllib.parse.quote(query_string)
     query_url = f"{config.NINOX_API_ENDPOINT}teams/{config.NINOX_TEAM_ID}/databases/{config.NINOX_DATABASE_ID}/query?query={encoded_query}"
     headers = {
@@ -96,17 +95,17 @@ def process_sales_data_last_week(df_sales):
 
     # Filtrar las ventas de bicicletas y otros productos
     df_bicis = df_cobradas[
-        (df_cobradas['cafe'] == False) &  # No es café
-        (df_cobradas['Categoria de Item'].str.contains('bicicleta'))  # Es bicicleta
+        (df_cobradas['cafe'] == "No") &  # No es café
+        (df_cobradas['Categoria de Item'].str.contains('Bicicleta'))  # Es bicicleta
     ]
 
     df_otros = df_cobradas[
-        (df_cobradas['cafe'] == False) &  # No es café
-        (~df_cobradas['Categoria de Item'].str.contains('bicicleta'))  # No es bicicleta
+        (df_cobradas['cafe'] == "No") &  # No es café
+        (~df_cobradas['Categoria de Item'].str.contains('Bicicleta'))  # No es bicicleta
     ]
 
     # Filtrar las ventas de café
-    df_cafe = df_cobradas[df_cobradas['cafe'] == True]
+    df_cafe = df_cobradas[df_cobradas['cafe'] == "Yes"]
 
     # Filtrar los productos por rango de fechas
     ventas_semana_bicis = df_bicis[
